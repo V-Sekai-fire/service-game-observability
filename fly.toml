@@ -9,10 +9,12 @@ primary_region = "iad"
   destination = "/var/lib"
   initial_size = "10gb"
 
-# VictoriaMetrics query UI (also used as health check endpoint)
+# VictoriaMetrics query UI (health check endpoint)
 [[services]]
   internal_port = 8428
   protocol = "tcp"
+  auto_start_machines = true
+  auto_stop_machines = false
   [[services.ports]]
     port = 8428
     handlers = ["http"]
@@ -25,6 +27,8 @@ primary_region = "iad"
 [[services]]
   internal_port = 9428
   protocol = "tcp"
+  auto_start_machines = true
+  auto_stop_machines = false
   [[services.ports]]
     port = 9428
     handlers = ["http"]
@@ -33,6 +37,8 @@ primary_region = "iad"
 [[services]]
   internal_port = 3200
   protocol = "tcp"
+  auto_start_machines = true
+  auto_stop_machines = false
   [[services.ports]]
     port = 3200
     handlers = ["http"]

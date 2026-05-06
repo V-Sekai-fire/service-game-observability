@@ -39,4 +39,4 @@ COPY tempo-config.yaml         /etc/tempo-config.yaml
 # Tempo query/UI:           3200
 EXPOSE 4317 4318 8428 9428 3200
 
-CMD ["supervisord", "-n", "-c", "/etc/supervisord.conf"]
+CMD ["supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]

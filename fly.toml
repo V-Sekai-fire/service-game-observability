@@ -9,7 +9,7 @@ primary_region = "iad"
   destination = "/var/lib"
   initial_size = "10gb"
 
-# VictoriaMetrics query UI — public (add basic auth for production)
+# VictoriaMetrics query UI (also used as health check endpoint)
 [[services]]
   internal_port = 8428
   protocol = "tcp"
@@ -21,19 +21,15 @@ primary_region = "iad"
     timeout = "5s"
     grace_period = "30s"
 
-# VictoriaLogs query UI — public
+# VictoriaLogs query UI
 [[services]]
   internal_port = 9428
   protocol = "tcp"
   [[services.ports]]
     port = 9428
     handlers = ["http"]
-  [[services.tcp_checks]]
-    interval = "15s"
-    timeout = "5s"
-    grace_period = "30s"
 
-# Tempo query UI — public
+# Tempo query UI
 [[services]]
   internal_port = 3200
   protocol = "tcp"
@@ -41,21 +37,9 @@ primary_region = "iad"
     port = 3200
     handlers = ["http"]
 
-# OTLP gRPC — internal only (other Fly apps reach via .internal DNS)
-[[services]]
-  internal_port = 4317
-  protocol = "tcp"
-  [[services.ports]]
-    port = 4317
-    handlers = ["tls", "http2"]
-
-# OTLP HTTP — internal only
-[[services]]
-  internal_port = 4318
-  protocol = "tcp"
-  [[services.ports]]
-    port = 4318
-    handlers = ["http"]
+# OTLP 4317 (gRPC) and 4318 (HTTP) are NOT listed here.
+# Other Fly apps reach them via multiplayer-fabric-observability.internal:4317/4318
+# on the private WireGuard network — no public exposure needed.
 
 [[vm]]
   memory = "1gb"

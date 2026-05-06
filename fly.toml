@@ -1,0 +1,63 @@
+app = "multiplayer-fabric-observability"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[mounts]
+  source = "observability_data"
+  destination = "/var/lib"
+  initial_size = "10gb"
+
+# VictoriaMetrics query UI — public (add basic auth for production)
+[[services]]
+  internal_port = 8428
+  protocol = "tcp"
+  [[services.ports]]
+    port = 8428
+    handlers = ["http"]
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "30s"
+
+# VictoriaLogs query UI — public
+[[services]]
+  internal_port = 9428
+  protocol = "tcp"
+  [[services.ports]]
+    port = 9428
+    handlers = ["http"]
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "30s"
+
+# Tempo query UI — public
+[[services]]
+  internal_port = 3200
+  protocol = "tcp"
+  [[services.ports]]
+    port = 3200
+    handlers = ["http"]
+
+# OTLP gRPC — internal only (other Fly apps reach via .internal DNS)
+[[services]]
+  internal_port = 4317
+  protocol = "tcp"
+  [[services.ports]]
+    port = 4317
+    handlers = ["tls", "http2"]
+
+# OTLP HTTP — internal only
+[[services]]
+  internal_port = 4318
+  protocol = "tcp"
+  [[services.ports]]
+    port = 4318
+    handlers = ["http"]
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

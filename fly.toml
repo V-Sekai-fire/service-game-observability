@@ -33,14 +33,14 @@ primary_region = "iad"
     port = 9428
     handlers = ["http"]
 
-# Tempo query UI
+# Jaeger UI
 [[services]]
-  internal_port = 3200
+  internal_port = 16686
   protocol = "tcp"
   auto_start_machines = true
   auto_stop_machines = false
   [[services.ports]]
-    port = 3200
+    port = 16686
     handlers = ["http"]
 
 # OTLP 4317 (gRPC) and 4318 (HTTP) are NOT listed here.

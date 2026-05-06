@@ -27,7 +27,7 @@ exporters:
       insecure: true
 
   otlp/traces:
-    endpoint: localhost:5317
+    endpoint: localhost:14317
     tls:
       insecure: true
 

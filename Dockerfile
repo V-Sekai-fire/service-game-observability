@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
 # Observability stack: VictoriaMetrics (metrics) + VictoriaLogs (logs) +
-# Jaeger all-in-one (traces) + OpenTelemetry Collector (ingest router).
+# VictoriaTraces (traces) + OpenTelemetry Collector (ingest router).
 # All processes managed by supervisord in a single Fly Machine.
 
 FROM victoriametrics/victoria-metrics:latest AS vm
 FROM victoriametrics/victoria-logs:latest AS vl
+FROM victoriametrics/victoria-traces:latest AS vt
 FROM otel/opentelemetry-collector-contrib:latest AS otelcol
-FROM jaegertracing/all-in-one:latest AS jaeger
 
 FROM debian:bookworm-slim
 
@@ -15,20 +15,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=vm      /victoria-metrics-prod        /usr/local/bin/victoria-metrics
-COPY --from=vl      /victoria-logs-prod           /usr/local/bin/victoria-logs
-COPY --from=otelcol /otelcol-contrib              /usr/local/bin/otelcol
-COPY --from=jaeger  /go/bin/all-in-one-linux      /usr/local/bin/jaeger
+COPY --from=vm      /victoria-metrics-prod  /usr/local/bin/victoria-metrics
+COPY --from=vl      /victoria-logs-prod     /usr/local/bin/victoria-logs
+COPY --from=vt      /victoria-traces-prod   /usr/local/bin/victoria-traces
+COPY --from=otelcol /otelcol-contrib        /usr/local/bin/otelcol
 
 RUN chmod +x /usr/local/bin/victoria-metrics \
              /usr/local/bin/victoria-logs \
-             /usr/local/bin/otelcol \
-             /usr/local/bin/jaeger
+             /usr/local/bin/victoria-traces \
+             /usr/local/bin/otelcol
 
 RUN mkdir -p /var/lib/victoriametrics \
              /var/lib/victorialogs \
-             /var/lib/jaeger/data \
-             /var/lib/jaeger/keys
+             /var/lib/victoriatraces
 
 COPY supervisord.conf           /etc/supervisor/conf.d/observability.conf
 COPY otel-collector-config.yaml /etc/otel-collector-config.yaml
@@ -36,7 +35,7 @@ COPY otel-collector-config.yaml /etc/otel-collector-config.yaml
 # OTLP ingest (internal): 4317 gRPC, 4318 HTTP
 # VictoriaMetrics query/UI: 8428
 # VictoriaLogs query/UI:    9428
-# Jaeger UI:                16686
-EXPOSE 4317 4318 8428 9428 16686
+# VictoriaTraces query/UI:  10428
+EXPOSE 4317 4318 8428 9428 10428
 
 CMD ["supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]

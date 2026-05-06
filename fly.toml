@@ -33,14 +33,14 @@ primary_region = "iad"
     port = 9428
     handlers = ["http"]
 
-# Jaeger UI
+# VictoriaTraces query UI
 [[services]]
-  internal_port = 16686
+  internal_port = 10428
   protocol = "tcp"
   auto_start_machines = true
   auto_stop_machines = false
   [[services.ports]]
-    port = 16686
+    port = 10428
     handlers = ["http"]
 
 # OTLP 4317 (gRPC) and 4318 (HTTP) are NOT listed here.

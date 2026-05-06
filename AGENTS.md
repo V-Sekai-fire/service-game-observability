@@ -8,7 +8,7 @@ Metrics, logs, and traces for the V-Sekai-fire platform, deployed as a single Fl
 |---------|------|---------|
 | VictoriaMetrics | 8428 | Metrics storage and PromQL |
 | VictoriaLogs | 9428 | Log storage and query |
-| Jaeger all-in-one | 16686 | Trace storage and query (UI) |
+| VictoriaTraces | 10428 | Trace storage and query |
 | OTEL Collector | 4317 (gRPC), 4318 (HTTP) | OTLP ingest, routes to the above |
 
 All four run under supervisord. Data persists on an `observability_data` volume at `/var/lib`.
@@ -68,13 +68,13 @@ fly secrets set \
 ```bash
 fly proxy 8428:8428   --app multiplayer-fabric-observability   # VictoriaMetrics
 fly proxy 9428:9428   --app multiplayer-fabric-observability   # VictoriaLogs
-fly proxy 16686:16686 --app multiplayer-fabric-observability   # Jaeger UI
+fly proxy 10428:10428 --app multiplayer-fabric-observability   # VictoriaTraces
 ```
 
 Public URLs (add basic auth before exposing):
 - `http://multiplayer-fabric-observability.fly.dev:8428/vmui/`
 - `http://multiplayer-fabric-observability.fly.dev:9428/`
-- `http://multiplayer-fabric-observability.fly.dev:16686/`
+- `http://multiplayer-fabric-observability.fly.dev:10428/`
 
 ## Data retention
 
@@ -96,4 +96,4 @@ Public URLs (add basic auth before exposing):
 
 - Keep the app in `iad` (same region as gateway, crdb, uro).
 - OTLP ports 4317 and 4318 must not be exposed publicly — they accept unauthenticated writes.
-- Add HTTP basic auth to ports 8428, 9428, and 16686 before public exposure.
+- Add HTTP basic auth to ports 8428, 9428, and 10428 before public exposure.

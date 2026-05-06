@@ -26,8 +26,8 @@ exporters:
     tls:
       insecure: true
 
-  otlp/traces:
-    endpoint: localhost:14317
+  otlphttp/traces:
+    endpoint: http://localhost:10428/insert/opentelemetry
     tls:
       insecure: true
 
@@ -44,4 +44,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [otlp/traces]
+      exporters: [otlphttp/traces]

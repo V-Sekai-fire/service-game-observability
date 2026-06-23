@@ -1,6 +1,7 @@
 # multiplayer-fabric-observability
 
-Metrics, logs, and traces for the V-Sekai-fire platform, deployed as a single Fly Machine.
+Metrics, logs, and traces for the V-Sekai-fire platform, deployed as rootless
+Podman containers managed by systemd quadlets.
 
 ## Services
 
@@ -11,23 +12,52 @@ Metrics, logs, and traces for the V-Sekai-fire platform, deployed as a single Fl
 | VictoriaTraces | 10428 | Trace storage and query |
 | OTEL Collector | 4317 (gRPC), 4318 (HTTP) | OTLP ingest, routes to the above |
 
-All four run under supervisord. Data persists on an `observability_data` volume at `/var/lib`.
+All four run in a shared Podman pod so they communicate via `localhost`. Named
+Podman volumes (`observability-metrics`, `observability-logs`,
+`observability-traces`) hold persistent data.
 
-## Deploying
+## Installing
 
-### First time
+Requires Podman ≥ 4.4 and systemd ≥ 250 (quadlet support built-in).
 
 ```bash
-fly apps create multiplayer-fabric-observability
-fly volumes create observability_data --app multiplayer-fabric-observability --region iad --size 10
-flyctl deploy --app multiplayer-fabric-observability
+# 1. Create the quadlet drop-in directory
+mkdir -p ~/.config/containers/systemd
+
+# 2. Copy unit files and otel config
+cp quadlet/* ~/.config/containers/systemd/
+cp otel-collector-config.yaml ~/.config/containers/systemd/
+
+# 3. Reload systemd so quadlet generator runs
+systemctl --user daemon-reload
+
+# 4. Enable and start everything
+systemctl --user enable --now \
+    observability-pod.service \
+    victoria-metrics.service \
+    victoria-logs.service \
+    victoria-traces.service \
+    otel-collector.service
 ```
 
-### Ongoing
+### Verify
 
-Push to `main` — the deploy workflow runs automatically.
+```bash
+systemctl --user status victoria-metrics victoria-logs victoria-traces otel-collector
+podman pod ps
+```
 
-## Sending telemetry from other Fly apps
+### Updating images
+
+```bash
+podman pull victoriametrics/victoria-metrics:latest \
+           victoriametrics/victoria-logs:latest \
+           victoriametrics/victoria-traces:latest \
+           otel/opentelemetry-collector-contrib:latest
+systemctl --user restart victoria-metrics victoria-logs victoria-traces otel-collector
+```
+
+## Sending telemetry from other services
 
 ### Elixir / Phoenix
 
@@ -41,7 +71,7 @@ Add to `config/runtime.exs`:
 ```elixir
 config :opentelemetry_exporter,
   otlp_protocol: :grpc,
-  otlp_endpoint: "http://multiplayer-fabric-observability.internal:4317"
+  otlp_endpoint: "http://localhost:4317"
 
 config :opentelemetry,
   resource: [service: [name: "my-service", version: "1.0.0"]]
@@ -50,31 +80,21 @@ config :opentelemetry,
 ### Docker / other services
 
 ```
-OTEL_EXPORTER_OTLP_ENDPOINT=http://multiplayer-fabric-observability.internal:4318
+OTEL_EXPORTER_OTLP_ENDPOINT=http://<host>:4318
 OTEL_SERVICE_NAME=my-service
 OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production
-```
-
-### Set as a Fly secret
-
-```bash
-fly secrets set \
-  OTEL_EXPORTER_OTLP_ENDPOINT=http://multiplayer-fabric-observability.internal:4318 \
-  --app multiplayer-fabric-gateway
 ```
 
 ## Querying
 
 ```bash
-fly proxy 8428:8428   --app multiplayer-fabric-observability   # VictoriaMetrics
-fly proxy 9428:9428   --app multiplayer-fabric-observability   # VictoriaLogs
-fly proxy 10428:10428 --app multiplayer-fabric-observability   # VictoriaTraces
+# Access UIs directly (ports published by the pod)
+open http://localhost:8428/vmui/   # VictoriaMetrics
+open http://localhost:9428/        # VictoriaLogs
+open http://localhost:10428/       # VictoriaTraces
 ```
 
-Public URLs (add basic auth before exposing):
-- `http://multiplayer-fabric-observability.fly.dev:8428/vmui/`
-- `http://multiplayer-fabric-observability.fly.dev:9428/`
-- `http://multiplayer-fabric-observability.fly.dev:10428/`
+Add HTTP basic auth via a reverse proxy (nginx, Caddy) before public exposure.
 
 ## Data retention
 
@@ -86,14 +106,16 @@ Public URLs (add basic auth before exposing):
 
 | Path | Purpose |
 |------|---------|
-| `Dockerfile` | Multi-stage build; copies binaries from official images |
-| `supervisord.conf` | Process management for all four services |
-| `otel-collector-config.yaml` | OTLP routing rules |
-| `fly.toml` | Fly.io app config with persistent volume |
-| `.github/workflows/deploy.yml` | Deploy on push to main |
+| `quadlet/observability.pod` | Podman pod — shared network, port publishing |
+| `quadlet/victoria-metrics.container` | VictoriaMetrics quadlet unit |
+| `quadlet/victoria-logs.container` | VictoriaLogs quadlet unit |
+| `quadlet/victoria-traces.container` | VictoriaTraces quadlet unit |
+| `quadlet/otel-collector.container` | OTel Collector quadlet unit |
+| `quadlet/observability-{metrics,logs,traces}.volume` | Named Podman volumes |
+| `otel-collector-config.yaml` | OTLP routing rules (copied to systemd dir on install) |
 
 ## Conventions
 
-- Keep the app in `iad` (same region as gateway, crdb, uro).
 - OTLP ports 4317 and 4318 must not be exposed publicly — they accept unauthenticated writes.
 - Add HTTP basic auth to ports 8428, 9428, and 10428 before public exposure.
+- All containers share the pod's `localhost`; the OTel Collector config targets `localhost:<port>` for each backend.

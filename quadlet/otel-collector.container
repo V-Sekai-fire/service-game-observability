@@ -5,7 +5,7 @@ Requires=observability-pod.service
 After=victoria-metrics.service victoria-logs.service victoria-traces.service
 
 [Container]
-Image=otel/opentelemetry-collector-contrib:latest
+Image=docker.io/otel/opentelemetry-collector-contrib:latest
 Pod=observability.pod
 # otel-collector-config.yaml must be copied alongside the quadlet files
 # (see AGENTS.md install steps)

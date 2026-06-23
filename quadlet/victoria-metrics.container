@@ -4,7 +4,7 @@ After=observability-pod.service
 Requires=observability-pod.service
 
 [Container]
-Image=victoriametrics/victoria-metrics:latest
+Image=docker.io/victoriametrics/victoria-metrics:latest
 Pod=observability.pod
 Volume=observability-metrics.volume:/var/lib/victoriametrics:z
 Exec=-storageDataPath=/var/lib/victoriametrics -httpListenAddr=:8428 -retentionPeriod=12 -enableTCP6

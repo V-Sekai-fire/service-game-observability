@@ -1,0 +1,15 @@
+[Unit]
+Description=Multiplayer Fabric Observability Pod
+
+[Pod]
+PodName=observability
+# OTLP ingest — internal only; restrict firewall to trusted peers
+PublishPort=4317:4317
+PublishPort=4318:4318
+# Query UIs — add reverse-proxy + basic auth before public exposure
+PublishPort=8428:8428
+PublishPort=9428:9428
+PublishPort=10428:10428
+
+[Install]
+WantedBy=default.target

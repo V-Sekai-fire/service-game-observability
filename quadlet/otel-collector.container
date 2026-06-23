@@ -1,0 +1,20 @@
+[Unit]
+Description=OpenTelemetry Collector – OTLP ingest router
+After=observability-pod.service
+Requires=observability-pod.service
+After=victoria-metrics.service victoria-logs.service victoria-traces.service
+
+[Container]
+Image=otel/opentelemetry-collector-contrib:latest
+Pod=observability.pod
+# otel-collector-config.yaml must be copied alongside the quadlet files
+# (see AGENTS.md install steps)
+Volume=%h/.config/containers/systemd/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro,z
+Exec=--config=/etc/otel-collector-config.yaml
+
+[Service]
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

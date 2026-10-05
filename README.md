@@ -4,7 +4,7 @@ Metrics, log and trace stores behind an OTLP collector, run as rootless containe
 
 ## What it is for
 
-Services send OTLP to the collector, which routes each signal to its store; all of them share one pod and keep their data on named volumes. The query interfaces need an authenticating proxy before they are exposed beyond the host.
+Services send OTLP to the collector, which routes each signal to its store; all of them share one pod and keep their data on named volumes. The OTLP ingest ports accept unauthenticated writes and stay off the public network; the query interfaces need an authenticating proxy before they are exposed beyond the host.
 
 ## Build and run
 

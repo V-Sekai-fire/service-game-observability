@@ -12,4 +12,4 @@ Copy the quadlet units and the collector configuration into the user's systemd c
 
 ## Licence
 
-The licence is not stated.
+MIT. See [LICENSE](LICENSE).
